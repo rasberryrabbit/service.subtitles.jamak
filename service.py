@@ -102,10 +102,10 @@ def get_subpages(query,list_mode=0):
     url = search_url+newquery
     while (page_count<=max_pages) and (file_count<max_file_count):
         if max_file_count-file_count>0:
-            new_count = get_list(url,max_file_count-file_count,list_mode)
+            check_count, new_count = get_list(url,max_file_count-file_count,list_mode)
         else:
-            new_count = 0
-        if new_count==0:
+            check_count = 0
+        if check_count==0:
             break
         file_count += new_count
         # next page
@@ -199,6 +199,7 @@ def get_list(url, limit_file, list_mode):
     search_pattern = "<td class=\"l_subj\">\s+?<a href='([^']+)'><span>(.+)</span></a>\s+?<span [^>]+>([^<]+)</"
     content_list = read_url(url)
     get_count = 0
+    match_count = 0
     # 자막이 없음을 알리는 페이지를 인식.
     lists = re.findall(search_pattern,content_list)
     for link, title_name, sublang in lists:
@@ -208,11 +209,12 @@ def get_list(url, limit_file, list_mode):
             title_name = re.sub("<.*?>","",title_name)
             list_files = get_files(link)
             for furl,name,flink in list_files:
+                get_count += 1
                 if use_se_ep_check == "true":
                     if list_mode==1:
                         if 2!=check_season_episode(name,item['season'],item['episode']) and 2!=check_season_episode(title_name,item['season'],item['episode']):
                             continue
-                get_count += 1
+                match_count += 1
                 listitem = xbmcgui.ListItem(label          = sublang,
                                             label2         = name if use_titlename == "false" else title_name,
                                             iconImage      = "0",
@@ -229,7 +231,7 @@ def get_list(url, limit_file, list_mode):
 
                 xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=listurl,listitem=listitem,isFolder=False)
     #return item count
-    return get_count
+    return get_count, match_count
 
 # 파일을 다운로드
 def download_file(url,furl,name):
