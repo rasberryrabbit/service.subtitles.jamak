@@ -86,7 +86,9 @@ user_agent = __addon__.getSetting("user_agent")
 use_engkeyhan = __addon__.getSetting("use_engkeyhan")
 use_se_ep_check = __addon__.getSetting("use_se_ep_check")
 
-ep_expr = re.compile("\d{1,2}[^\d\s\.]{1,2}\d{1,3}")
+ep_expr = re.compile("(\D+)?(\d{1,2})\D+(\d{1,3})(\D+)?")
+
+main_query = ""
 
 def prepare_search_string(s):
     s = string.strip(s)
@@ -97,12 +99,15 @@ def prepare_search_string(s):
 def get_subpages(query,list_mode=0):
     file_count = 0
     page_count = 1
+    # main page
+    main_query = query
+    check_count, file_count = get_list(search_url,max_file_count,list_mode,1)
+    # first page    
     newquery = urllib.quote_plus(prepare_search_string(query))
-    # first page
     url = search_url+newquery
     while (page_count<=max_pages) and (file_count<max_file_count):
         if max_file_count-file_count>0:
-            check_count, new_count = get_list(url,max_file_count-file_count,list_mode)
+            check_count, new_count = get_list(url,max_file_count-file_count,list_mode,0)
         else:
             check_count = 0
         if check_count==0:
@@ -138,13 +143,14 @@ def decode_content (page):
 
 def read_url(url):
     opener = urllib2.build_opener()
-    opener.addheaders = [('User-Agent',user_agent), ('Accept-Encoding','gzip,deflate'),('Referer',url)]
+    opener.addheaders = [('User-Agent',user_agent), ('Accept-Encoding','gzip,deflate'), ('Referer',url), ('Connection','Keep-Alive')]
     try:
         rep = opener.open(url)
         res = decode_content(rep)
         rep.close()
     except:
         log(__scriptname__,url)
+        res = ""
     return res
 
 # jamak.kr의 페이지를 파싱해서 파일의 이름과 다운로드 주소를 얻어냄.
@@ -162,24 +168,13 @@ def get_files(url):
     return ret_list
     
 def check_season_episode(str_title, se, ep):
-    result = 0
+    se_ep = 0
     re_str = ep_expr.search(str_title)
     new_season = ""
     new_episode = ""    
     if re_str:
-        str_temp = re_str.group(0)
-        for i in range(0, len(str_temp)):
-            c = str_temp[i]
-            if c.isdigit():
-                       new_season += c
-            else:
-                break
-        for i in range(len(str_temp)-1, -1, -1):
-            c = str_temp[i]
-            if c.isdigit():
-                       new_episode = c + new_episode
-            else:
-                break
+        new_season = re_str.group(2)
+        new_episode = re_str.group(3)
     if new_season=="":
         new_season="0"            
     if new_episode=="":
@@ -189,13 +184,13 @@ def check_season_episode(str_title, se, ep):
     if ep=="":
         ep="0"
     if int(new_season)==int(se):
-        result = 1
+        se_ep = 1
         if int(new_episode)==int(ep):
-            result = 2
-    return result
+            se_ep = 2
+    return se_ep
 
 # jamak.kr의 페이지의 내용을 추출해서 링크를 얻어냄. 그리고 파일 다운로드 URL을 listbox에 추가.
-def get_list(url, limit_file, list_mode):
+def get_list(url, limit_file, list_mode, main_page = 0):
     search_pattern = "<td class=\"l_subj\">\s+?<a href='([^']+)'><span>(.+)</span></a>\s+?<span [^>]+>([^<]+)</"
     content_list = read_url(url)
     get_count = 0
@@ -203,17 +198,21 @@ def get_list(url, limit_file, list_mode):
     # 자막이 없음을 알리는 페이지를 인식.
     lists = re.findall(search_pattern,content_list)
     for link, title_name, sublang in lists:
-        if get_count<limit_file:
+        if match_count<limit_file:
             link = link.replace("&amp;","&")
             link = base_url+link[link.find("/"):]
             title_name = re.sub("<.*?>","",title_name)
+            get_count += 1
+            # main page
+            if main_page==1:
+                if re.search(main_query,title_name,re.I) is None:
+                    continue
+            if use_se_ep_check == "true":
+                if list_mode==1:
+                    if 0==check_season_episode(title_name,item['season'],item['episode']):
+                        continue
             list_files = get_files(link)
             for furl,name,flink in list_files:
-                get_count += 1
-                if use_se_ep_check == "true":
-                    if list_mode==1:
-                        if 2!=check_season_episode(name,item['season'],item['episode']) and 2!=check_season_episode(title_name,item['season'],item['episode']):
-                            continue
                 match_count += 1
                 listitem = xbmcgui.ListItem(label          = sublang,
                                             label2         = name if use_titlename == "false" else title_name,
@@ -233,7 +232,7 @@ def get_list(url, limit_file, list_mode):
     #return item count
     return get_count, match_count
 
-# 파일을 다운로드
+# 파일을 다운로드, 하루에 7번 다운로드 제한.
 def download_file(url,furl,name):
     subtitle_list = []
     local_temp_file = os.path.join(__temp__.encode('utf-8'), name)
