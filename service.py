@@ -106,7 +106,6 @@ def get_subpages(query,list_mode=0):
         else:
             new_count = 0
         if new_count==0:
-            log(__scriptname__,'no items')
             break
         file_count += new_count
         # next page
@@ -139,16 +138,19 @@ def decode_content (page):
 
 def read_url(url):
     opener = urllib2.build_opener()
-    opener.addheaders = [('User-Agent',user_agent), ('Accept-Encoding','gzip,deflate')]
-    rep = opener.open(url)
-    res = decode_content(rep)
-    rep.close()
+    opener.addheaders = [('User-Agent',user_agent), ('Accept-Encoding','gzip,deflate'),('Referer',url)]
+    try:
+        rep = opener.open(url)
+        res = decode_content(rep)
+        rep.close()
+    except:
+        log(__scriptname__,url)
     return res
 
 # jamak.kr의 페이지를 파싱해서 파일의 이름과 다운로드 주소를 얻어냄.
 def get_files(url):
     ret_list = []
-    file_pattern = "<a href=\"javascript\:file_download\('([^']+)',\s+?'(.*)',\s+?"
+    file_pattern = "<a href=\"javascript\:file_download\('([^']+)',\s+?'(.+)',\s+?"
     content_file = read_url(url)
     files = re.findall(file_pattern,content_file)
     for flink,name in files:
