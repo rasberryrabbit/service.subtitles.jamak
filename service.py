@@ -103,7 +103,10 @@ def get_subpages(query,list_mode=0):
     main_query = query
     check_count, file_count = get_list(search_url,max_file_count,list_mode,1)
     # first page    
-    newquery = urllib.quote_plus(prepare_search_string(query))
+    if item['mansearch']:
+        newquery = query
+    else:
+        newquery = urllib.quote_plus(prepare_search_string(query))
     url = search_url+newquery
     while (page_count<=max_pages) and (file_count<max_file_count):
         if max_file_count-file_count>0:

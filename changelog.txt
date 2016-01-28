@@ -1,3 +1,6 @@
+0.2.1
+- fix manual search in Korean.
+
 0.2
 - site is too slow
 - skip timeout error
