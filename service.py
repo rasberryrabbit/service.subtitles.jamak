@@ -90,6 +90,38 @@ ep_expr = re.compile("(\D+)?(\d{1,2})\D+(\d{1,3})(\D+)?")
 
 main_query = ""
 
+def smart_quote(str):
+    ret = ''
+    spos = 0
+    epos = len(str)
+    while spos<epos:
+        ipos = str.find('%',spos)
+        if ipos == -1:
+            ret += urllib.quote_plus(str[spos:])
+            spos = epos
+        else:
+            ret += urllib.quote_plus(str[spos:ipos])
+            spos = ipos
+            ipos+=1
+            # check '%xx'
+            if ipos+1<epos:
+                if str[ipos] in string.hexdigits:
+                    ipos+=1
+                    if str[ipos] in string.hexdigits:
+                        # pass encoded
+                        ipos+=1
+                        ret+=str[spos:ipos]
+                    else:
+                        ret+=urllib.quote_plus(str[spos:ipos])
+                else:
+                    ipos+=1
+                    ret+=urllib.quote_plus(str[spos:ipos])
+                spos = ipos
+            else:
+                ret+=urllib.quote_plus(str[spos:epos])
+                spos = epos
+    return ret
+
 def prepare_search_string(s):
     s = string.strip(s)
     s = re.sub(r'\(\d\d\d\d\)$', '', s)  # remove year from title
@@ -104,7 +136,7 @@ def get_subpages(query,list_mode=0):
     check_count, file_count = get_list(search_url,max_file_count,list_mode,1)
     # first page    
     if item['mansearch']:
-        newquery = query
+        newquery = smart_quote(query)
     else:
         newquery = urllib.quote_plus(prepare_search_string(query))
     url = search_url+newquery

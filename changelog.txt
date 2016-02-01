@@ -1,3 +1,6 @@
+0.2.2
+- smart quote on manual search.
+
 0.2.1
 - fix manual search in Korean.
 
