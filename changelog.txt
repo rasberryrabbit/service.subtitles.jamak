@@ -1,3 +1,6 @@
+0.2.3
+- add search with title and season and episode
+
 0.2.2
 - smart quote on manual search.
 

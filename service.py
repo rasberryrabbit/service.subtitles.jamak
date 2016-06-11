@@ -293,11 +293,14 @@ def search(item):
             lastgot += get_subpages(engtypetokor(item['mansearchstr']))
     elif item['tvshow']:
         list_mode = 1
-        # "title 1e01"
-        lastgot = get_subpages("%s %se%.2d" % (item['tvshow'],item['season'],int(item['episode'])),1)
-        if lastgot == 0:
-            # "title 1x01"
-            lastgot = get_subpages("%s %sx%.2d" % (item['tvshow'],item['season'],int(item['episode'])),1)
+        try:
+            # "title 1e01"
+            lastgot = get_subpages("%s %se%.2d" % (item['tvshow'],item['season'],int(item['episode'])),1)
+            if lastgot == 0:
+                # "title 1x01"
+                lastgot = get_subpages("%s %sx%.2d" % (item['tvshow'],item['season'],int(item['episode'])),1)
+        except:
+            pass
         if lastgot == 0:
             lastgot = get_subpages(item['tvshow'],1)
     elif item['title'] and item['year']:
