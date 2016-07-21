@@ -46,6 +46,12 @@ opener2 = urllib2.build_opener(*handlers)
 def log(module, msg):
     xbmc.log((u"### [%s] - %s" % (module, msg,)).encode('utf-8'))
 
+time_script_begin = time.time()
+
+def check_script_time():
+    _curr_time = time.time();
+    return _curr_time - time_script_begin
+
 # remove file and dir with 30 days before / now after time
 def clear_tempdir(strpath):
     if xbmcvfs.exists(strpath):
@@ -86,7 +92,7 @@ user_agent = __addon__.getSetting("user_agent")
 use_engkeyhan = __addon__.getSetting("use_engkeyhan")
 use_se_ep_check = __addon__.getSetting("use_se_ep_check")
 
-ep_expr = re.compile("(\D+)?(\d{1,2})\D+(\d{1,3})(\D+)?")
+ep_expr = re.compile("[\D\S]+(\d{1,2})(\s+)?[^\d\s\.]+(\d{1,3})")
 
 main_query = ""
 
@@ -141,6 +147,8 @@ def get_subpages(query,list_mode=0):
         newquery = urllib.quote_plus(prepare_search_string(query))
     url = search_url+newquery
     while (page_count<=max_pages) and (file_count<max_file_count):
+        if check_script_time()>29.5:
+            break
         if max_file_count-file_count>0:
             check_count, new_count = get_list(url,max_file_count-file_count,list_mode,0)
         else:
@@ -233,6 +241,8 @@ def get_list(url, limit_file, list_mode, main_page = 0):
     # 자막이 없음을 알리는 페이지를 인식.
     lists = re.findall(search_pattern,content_list)
     for link, title_name, sublang in lists:
+        if check_script_time()>29.5:
+            break
         if match_count<limit_file:
             link = link.replace("&amp;","&")
             link = base_url+link[link.find("/"):]

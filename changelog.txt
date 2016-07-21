@@ -1,3 +1,7 @@
+0.2.4
+- fix season/episode checking
+- add script time limit checking
+
 0.2.3
 - add search with title and season and episode
 
