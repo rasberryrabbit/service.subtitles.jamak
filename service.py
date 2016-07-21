@@ -216,7 +216,7 @@ def check_season_episode(str_title, se, ep):
     new_season = ""
     new_episode = ""    
     if re_str:
-        new_season = re_str.group(2)
+        new_season = re_str.group(1)
         new_episode = re_str.group(3)
     if new_season=="":
         new_season="0"            
